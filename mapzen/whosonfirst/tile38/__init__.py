@@ -21,13 +21,19 @@ class client:
         
         url = "http://%s:%s" % (self.host, self.port)
         rsp = requests.post(url, data=cmd)
+
+        parsed = None
         
         try:
-            return json.loads(rsp.content)
+            parsed = json.loads(rsp.content)
         except Exception, e:
             logging.debug("failed to parse %s" % rsp.content)
             raise Exception, e
+
+        # throw an error if parsed['ok'] != True?
         
+        return parsed
+    
     def nearby(self, lat, lon, r):
                 
         cmd = "NEARBY %s POINT %0.6f %0.6f %d" % (self.index, lat, lon, r)
