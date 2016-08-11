@@ -35,6 +35,32 @@ for row in rsp['objects']:
 	print row['id']
 ```
 
+### Fancy
+
+```
+import mapzen.whosonfirst.tile38
+import mapzen.whosonfirst.placetypes
+
+if __name__ == '__main__':
+
+    pt = mapzen.whosonfirst.placetypes.placetype('venue')
+    filters = { 'wof:placetype_id': pt.id() }
+
+    cl = mapzen.whosonfirst.tile38.whosonfirst_client()
+
+    rsp = cl.nearby(37.775159, -122.413316, 10, filters=filters)
+    print cl.rsp2features(rsp, fetch_names=True)
+
+    # prints
+    # [{'geometry': {u'type': u'Point', u'coordinates': [-122.413361, 37.775088]}, 'type': 'Feature', 'properties': {'wof:name': u'El Dorado Hotel', u'wof:placetype_id': 102312325, u'wof:id': 286765465}}]
+
+    rsp = cl.nearby_paginated(37.775159, -122.413316, 1000)
+    print len(rsp['objects'])
+
+    # prints
+    # 5268
+```
+
 ## See also
 
 * http://tile38.com/
