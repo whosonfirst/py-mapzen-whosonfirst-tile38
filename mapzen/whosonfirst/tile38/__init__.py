@@ -47,6 +47,10 @@ class whosonfirst_client(client):
             'wof:is_deprecated'
         )
 
+    def point_in_polygon(self, lat, lon, **kwargs):
+
+        return self.intersects_paginated(lat, lon, lat, lon, **kwargs)
+
     def nearby(self, lat, lon, r, **kwargs):
 
         cursor = kwargs.get('cursor', 0)
