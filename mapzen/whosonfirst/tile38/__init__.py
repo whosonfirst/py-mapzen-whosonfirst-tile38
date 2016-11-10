@@ -35,20 +35,24 @@ class client:
 
 class whosonfirst_client(client):
 
+    def __init__ (self, **kwargs):
+
+        client.__init__(self, **kwargs)
+
+        self.possible_filters = (
+            'wof:id',
+            'wof:placetype',		# this gets special-cased in filters_to_where (20161110/thisisaaronland)
+            'wof:placetype_id',
+            'wof:is_superseded',
+            'wof:is_deprecated'
+        )
+
     def nearby(self, lat, lon, r, **kwargs):
 
         cursor = kwargs.get('cursor', 0)
         filters = kwargs.get('filters', {})
-        possible = ('wof:id', 'wof:placetype_id')
 
-        where = []
-
-        for k in possible:
-
-            v = filters.get(k, None)
-
-            if v:
-                where.append("WHERE %s %s %s" % (k, v, v))
+        where = self.filters_to_where(filters)
 
         cmd = [ "NEARBY", self.collection ]
 
@@ -82,8 +86,14 @@ class whosonfirst_client(client):
                 logging.error(rsp['err'])
                 break
 
-            for o in rsp['objects']:
-                yield o
+            fields = rsp['fields']
+
+            for row in rsp['objects']:
+
+                if kwargs.get('as_feature', False):
+                    row = self.row_to_feature(row, field_names=fields, fetch_meta=True)
+
+                yield row
 
             cursor = rsp.get('cursor', 0)
 
@@ -94,16 +104,8 @@ class whosonfirst_client(client):
 
         cursor = kwargs.get('cursor', 0)
         filters = kwargs.get('filters', {})
-        possible = ('wof:id', 'wof:placetype_id')
 
-        where = []
-
-        for k in possible:
-
-            v = filters.get(k, None)
-
-            if v:
-                where.append("WHERE %s %s %s" % (k, v, v))
+        where = self.filters_to_where(filters)
 
         cmd = [ "INTERSECTS", self.collection ]
 
@@ -140,50 +142,97 @@ class whosonfirst_client(client):
                 logging.error(rsp['err'])
                 break
 
-            for o in rsp['objects']:
-                yield o
+            fields = rsp['fields']
+
+            for row in rsp['objects']:
+
+                if kwargs.get('as_feature', False):
+                    row = self.row_to_feature(row, field_names=fields, fetch_meta=True)
+
+                yield row
 
             cursor = rsp.get('cursor', 0)
 
             if cursor == 0:
                 break
 
-    def rsp2features(self, rsp, **kwargs):
+    def rsp_to_features(self, rsp, **kwargs):
 
-        fetch_names = kwargs.get('fetch_names', False)
-
-        features = []
-
-        fields = rsp.get('fields', [])
-        count_fields = len(fields)
+        fields = rsp['fields']
 
         for row in rsp['objects']:
+            yield self.row_to_feature(row, field_names=fields, fetch_meta=True)
+
+    def row_to_feature(self, row, **kwargs):
+
+        geom_type = kwargs.get('type', 'object')
+
+        field_names = kwargs.get('field_names', [])
+        fetch_meta = kwargs.get('fetch_meta', False)
+
+        if not row.get(geom_type, False):
+            logging.error("Invalid geom type")
+            return None
+
+        count_fields = len(field_names)
+
+        wofid, repo = row['id'].split("#")
+
+        geom = row[geom_type]
+
+        props = {
+            'wof:repo': repo
+        }
+        
+        for i in range(0, count_fields):
             
-            geom = row['object']
-            props = {}
+            k = field_names[i]
+            v = row['fields'][i]
+            
+            props[k] = v
+            
+        if fetch_meta:
+                
+            key = "%s#meta" % props['wof:id']
+            cmd = "GET %s %s" % (self.collection, key)
+            
+            rsp2 = self.do(cmd)
+            meta = json.loads(rsp2['object'])
+            
+            for k, v in meta.items():
 
-            for i in range(0, count_fields):
-
-                k = fields[i]
-                v = row['fields'][i]
-
-                """
-                if k == 'wof:placetype_id':
-
-                    pt = mapzen.whosonfirst.placetypes.placetype(v)
-                    print pt.name()
-                """
+                if props.get(k, False):
+                    continue
 
                 props[k] = v
-
-            if fetch_names:
-
-                key = "%s:name" % props['wof:id']
-                cmd = "GET %s %s" % (self.collection, key)
-
-                rsp2 = self.do(cmd)
-                props['wof:name'] = rsp2['object']
-
-            features.append({'type': 'Feature', 'geometry': geom, 'properties': props })
+            
+        feature = {
+            'id': wofid,
+            'type': 'Feature',
+            'geometry': geom,
+            'properties': props
+        }
         
-        return features
+        return feature
+
+    def filters_to_where(self, filters):
+
+        where = []
+
+        for k in self.possible_filters:
+
+            v = filters.get(k, None)
+
+            if not v:
+                continue
+
+            if k == 'wof:placetype':
+
+                pt = mapzen.whosonfirst.placetypes.placetype(v)
+                
+                k = 'wof:placetype_id'
+                v = pt.id()
+
+            where.append("WHERE %s %s %s" % (k, v, v))
+
+        return where
