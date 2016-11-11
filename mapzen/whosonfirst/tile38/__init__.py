@@ -328,9 +328,9 @@ class whosonfirst_client(client):
         hier = props.get("wof:hierarchy", [])
         
         meta = {
-            "Name": name,
-            "Country": country,
-            "Hierarchy": str_hier
+            "wof:name": name,
+            "wof:country": country,
+            "wof:hierarchy": str_hier
         }
 
         str_meta = json.dumps(meta)
