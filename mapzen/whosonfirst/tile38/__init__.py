@@ -240,3 +240,42 @@ class whosonfirst_client(client):
             where.append("WHERE %s %s %s" % (k, v, v))
 
         return where
+
+    def index_feature(self, feature, **kwargs):
+
+        # see also: the IndexFeature method in https://github.com/whosonfirst/go-whosonfirst-tile38
+
+        geometry = kwargs.get("geometry", "")
+
+        if geometry == "":
+
+            geom = feature["geometry"]
+
+        elif geometry == "bbox":
+            raise Exception, "Please implement me"
+        
+        elif geometry == "centroid":
+            # Use mapzen.whosonfirst.pip.utils.reverse_geocoordinates ?
+            raise Exception, "Please implement me"
+
+        else:
+
+            raise Exception, "Unknown geometry filter"
+
+        props = feature["properties"]
+
+        wofid = props["wof:id"]
+
+        placetype = props["wof:placetype"]
+
+        pt = mapzen.whosonfirst.placetypes.placetype(placetype)
+        placetype_id = pt.id()
+
+        repo = props.get("wof:repo", None)
+
+        if repo == None:
+            raise Exception, "Missing wof:repo property"
+
+        parent_id = props.get("wof:parent_id", -1)
+        
+        key = "#".join(wofid, repo)
