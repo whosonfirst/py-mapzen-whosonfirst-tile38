@@ -279,7 +279,7 @@ class whosonfirst_client(client):
 
         parent_id = props.get("wof:parent_id", -1)
         
-        key = "#".join(wofid, repo)
+        key = "%s#%s" % (wofid, repo)
 
         is_superseded = 0
         is_deprecated = 0
@@ -311,17 +311,17 @@ class whosonfirst_client(client):
             else:
                 cmd.append(str_geom)
 
-            str_command = " ".join(cmd)
+            str_command = " ".join(map(str, cmd))
             logging.debug(str_command)
 
         else:
 
             cmd.append(str_geom)
 
-            str_command = " ".join(cmd)
+            str_command = " ".join(map(str, cmd))
             self.do(str_command)
 
-        meta_key = "#".join(wofid, "meta")
+        meta_key = "%s#%s" % (wofid, "meta")
 
         name = props.get("wof:name", "")
         country = props.get("wof:country", "XX")
@@ -330,7 +330,7 @@ class whosonfirst_client(client):
         meta = {
             "wof:name": name,
             "wof:country": country,
-            "wof:hierarchy": str_hier
+            "wof:hierarchy": hier
         }
 
         str_meta = json.dumps(meta)
@@ -340,7 +340,7 @@ class whosonfirst_client(client):
             "STRING", str_meta
         ]
 
-        str_meta_cmd = " ".join(meta_cmd)
+        str_meta_cmd = " ".join(map(str, meta_cmd))
         
         if debug:
             logging.debug(str_meta_cmd)
