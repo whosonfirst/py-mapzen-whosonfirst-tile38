@@ -246,7 +246,8 @@ class whosonfirst_client(client):
         # see also: the IndexFeature method in https://github.com/whosonfirst/go-whosonfirst-tile38
 
         geometry = kwargs.get("geometry", "")
-
+        debug = kwargs.get("debug", False)
+        
         if geometry == "":
 
             geom = feature["geometry"]
@@ -279,3 +280,70 @@ class whosonfirst_client(client):
         parent_id = props.get("wof:parent_id", -1)
         
         key = "#".join(wofid, repo)
+
+        is_superseded = 0
+        is_deprecated = 0
+
+        if len(props.get("wof:superseded_by", [])) > 0:
+            is_superseded = 1
+
+        deprecated = props.get("edtf:deprecated", None)
+
+        if deprecated != None and deprecated != "" and deprecated != "uuuu":
+            is_deprecated = 1
+
+        str_geom = json.dumps(geom)
+        
+        cmd = [
+            "SET", self.collection, key,
+            "FIELD", "wof:id", wofid,
+            "FIELD", "wof:placetype_id", placetype_id,
+            "FIELD", "wof:parent_id", parent_id,
+            "FIELD", "wof:is_superseded", is_superseded,
+            "FIELD", "wof:is_depercated", is_deprecated,
+            "OBJECT"
+        ]
+
+        if debug:
+
+            if geometry == "":
+                cmd.append("...")
+            else:
+                cmd.append(str_geom)
+
+            str_command = " ".join(cmd)
+            logging.debug(str_command)
+
+        else:
+
+            cmd.append(str_geom)
+
+            str_command = " ".join(cmd)
+            self.do(str_command)
+
+        meta_key = "#".join(wofid, "meta")
+
+        name = props.get("wof:name", "")
+        country = props.get("wof:country", "XX")
+        hier = props.get("wof:hierarchy", [])
+        
+        meta = {
+            "Name": name,
+            "Country": country,
+            "Hierarchy": str_hier
+        }
+
+        str_meta = json.dumps(meta)
+
+        meta_cmd = [
+            "SET", self.collection, meta_key,
+            "STRING", str_meta
+        ]
+
+        str_meta_cmd = " ".join(meta_cmd)
+        
+        if debug:
+            logging.debug(str_meta_cmd)
+        else:
+            self.do(str_meta_cmd)
+
