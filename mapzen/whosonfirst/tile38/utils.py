@@ -2,10 +2,8 @@ import mapzen.whosonfirst.pip.utils
 import mapzen.whosonfirst.placetypes
 import mapzen.whosonfirst.utils
 
+import logging
 import os
-
-# everything in here is early days and wrapped up in a big sweater of experimental
-# (20161110/thisisaaronland)
 
 def append_parent_and_hierarchy(t38_client, feature, **kwargs):
 
@@ -46,19 +44,13 @@ def append_parent_and_hierarchy(t38_client, feature, **kwargs):
             id = pr['wof:id']
             repo = pr['wof:repo']
 
-            # see below - this hasn't been rolled in to production yet
-            # hierarchies.extend(pr['wof:hierarchy'])
+            ph = pr.get('wof:hierarchy', None)
 
-            # it might make more sense overall to store the hierarchies in T38
-            # itself - it sort of depends on whether it makes sense to use T38
-            # for doing point-in-poly at all (20161110/thisisaaronland)
-            # https://github.com/whosonfirst/go-whosonfirst-tile38/issues/7
+            if ph == None:
+                logging.warning("tile38 record for %s is missing wof:hierarchy" % id)
+                ph = []
 
-            root = os.path.join(kwargs['data_root'], repo)
-            data = os.path.join(root, 'data')
-
-            f = mapzen.whosonfirst.utils.load(data, id)            
-            hierarchies.extend(f['properties']['wof:hierarchy'])
+            hierarchies.extend(ph)
 
         if len(possible) == 1:
             parent_id = possible[0]['properties']['wof:id']

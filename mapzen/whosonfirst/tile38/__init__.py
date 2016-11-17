@@ -1,6 +1,7 @@
 import logging
 import json
 import requests
+import logging
 
 import mapzen.whosonfirst.placetypes
 
@@ -13,7 +14,7 @@ class client:
         
     def do(self, cmd):
             
-        logging.debug(cmd)
+        logging.debug("DO %s" % cmd)
         
         # because I have no idea how to make the py-redis execute_command
         # method return more than a single result... (20160803/thisisaaronland)
@@ -72,8 +73,6 @@ class whosonfirst_client(client):
                     r])
 
         cmd = " ".join(map(str, cmd))
-        logging.debug(cmd)
-
         return self.do(cmd)
 
     def nearby_paginated(self, lat, lon, r, **kwargs):
@@ -128,8 +127,6 @@ class whosonfirst_client(client):
         ])
         
         cmd = " ".join(map(str, cmd))
-        logging.debug(cmd)
-
         return self.do(cmd)
 
     def intersects_paginated(self, swlat, swlon, nelat, nelon, **kwargs):
@@ -195,11 +192,14 @@ class whosonfirst_client(client):
             
             props[k] = v
             
+        pt = mapzen.whosonfirst.placetypes.placetype(props['wof:placetype_id'])
+        props['wof:placetype'] = str(pt)
+
         if fetch_meta:
                 
             key = "%s#meta" % props['wof:id']
             cmd = "GET %s %s" % (self.collection, key)
-            
+
             rsp2 = self.do(cmd)
             meta = json.loads(rsp2['object'])
             
