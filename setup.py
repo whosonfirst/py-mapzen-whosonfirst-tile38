@@ -24,11 +24,6 @@ setup(
     description='Simple Python wrapper for Who\'s On First helper functions',
     author='Mapzen',
     url='https://github.com/whosonfirst/py-mapzen-whosonfirst-tile38',
-    install_requires=[
-        'requests',
-        ],
-    dependency_links=[
-        ],
     packages=packages,
     scripts=[
         ],
